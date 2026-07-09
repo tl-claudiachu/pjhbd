@@ -46,6 +46,9 @@
     box-shadow:0 5px 0 var(--cocoa); transition:transform .08s, box-shadow .08s;
   }
   .btn:active { transform:translateY(4px); box-shadow:0 1px 0 var(--cocoa); }
+  .btn.mode { width:min(76vw, 380px); display:flex; flex-direction:column; gap:2px; padding:.55em 1em; }
+  .btn.mode small { font-weight:700; font-size:.62em; color:#7A6454; }
+  .btn.ghost { background:#FFF; }
   #winArt {
     max-height:44vh; max-width:84%; width:auto; min-height:0; flex:0 1 auto;
     object-fit:contain; border:4px solid var(--cocoa); border-radius:16px;
@@ -74,35 +77,42 @@
 
   <div id="hud" class="hidden">
     <div class="chip"><span id="hearts">❤️❤️❤️</span> 🫛<span id="score">0</span></div>
-    <div class="chip">🕯️<span id="cC">0</span>/34 🐘<span id="cE">0</span>/37 🍰<span id="cK">0</span>/12</div>
+    <div class="chip" id="goalChip">🕯️<span id="cC">0</span>/34 🐘<span id="cE">0</span>/37 🍰<span id="cK">0</span>/12</div>
     <button class="chip" id="muteBtn" style="pointer-events:auto; cursor:pointer;">🔊</button>
   </div>
   <div id="tapHint" class="hidden">點畫面跳躍（可以二段跳）</div>
 
-  <!-- 開始畫面 -->
-  <div id="title" class="overlay">
+  <!-- 模式選單 -->
+  <div id="menu" class="overlay">
     <div class="panel">
       <h1>🎂 PJ 的生日大冒險</h1>
-      <p>兩個人手牽手在海灘上奔跑，<br>
-         收集 <b>🕯️ 蠟燭 ×34、🐘 大象 ×37、🍰 蛋糕 ×12</b>，<br>
-         全部湊齊才算成功！<br>
-         撞到石頭會扣 ❤️（只有三顆），<br>吃 PJ 最愛的四季豆 🫛 可以補血！<br>
-         而且速度會越跑越快……準備好了嗎？<br>
-         <span style="color:#B08A5C;">📱 手機請轉「橫向」玩，畫面才夠大！</span></p>
-      <button class="btn" id="startBtn">牽手出發 ▶</button>
+      <p style="margin-bottom:.5vmin;">📱 手機請轉「橫向」玩，畫面才夠大！</p>
+      <button class="btn mode" id="mStory">🏝️ 故事模式<small>海灘出發 → 直島黃昏，兩關收集 34🕯️ 37🐘 12🍰</small></button>
+      <button class="btn mode ghost" id="mEndless">🏃 無盡挑戰<small>不會結束、越跑越快，比距離 PK 最高紀錄</small></button>
+      <button class="btn mode ghost" id="mDuo">💑 雙人同樂<small>左半邊控制她、右半邊控制 PJ，共用三顆心</small></button>
     </div>
   </div>
 
-  <!-- 失敗畫面 -->
+  <!-- 過場：前往直島 -->
+  <div id="inter" class="overlay hidden">
+    <div class="panel">
+      <h1>🌅 第 1 關完成！</h1>
+      <p>回憶收集了一半，搭上船前往直島……<br>天色漸暗，速度更快，小心腳步！</p>
+      <button class="btn" id="nextBtn">前往第 2 關 ⛴️</button>
+    </div>
+  </div>
+
+  <!-- 失敗 -->
   <div id="over" class="overlay hidden">
     <div class="panel">
-      <h1>💥 哎呀，絆倒了！</h1>
-      <p>這一趟收集了：<br><span id="overStats"></span><br>牽好手，再來一次！</p>
+      <h1 id="overTitle">💥 哎呀，絆倒了！</h1>
+      <p id="overStats"></p>
       <button class="btn" id="retryBtn">再挑戰 ↻</button>
+      <button class="btn ghost" id="menuBtn1">回選單</button>
     </div>
   </div>
 
-  <!-- 破關畫面 -->
+  <!-- 破關 -->
   <div id="win" class="overlay hidden">
     <div class="panel">
       <h1>🎉 全部湊齊了！</h1>
@@ -111,6 +121,7 @@
          還有 <span id="finalScore">0</span> 根四季豆——全都是我們一起收集的。<br>
          新的一歲，也要繼續手牽手一起走 💛</p>
       <button class="btn" id="againBtn">再玩一次 ↻</button>
+      <button class="btn ghost" id="menuBtn2">回選單</button>
     </div>
   </div>
 </div>
@@ -127,99 +138,44 @@ const PAL = {
   k:'#35332F', p:'#6B6B6B', b:'#4A3B32',
   f:'#41332C', e:'#33302C', w:'#FFFFFF', G:'#9CC08A',
   o:'#C98A4B', P:'#FF9BAA', q:'#F7E7C0',
-  r:'#E8484F', W:'#FFF3D0', l:'#5FA85C',
+  r:'#E8484F', W:'#FFF3D0', l:'#5FA85C', L:'#7FC97C', v:'#3E7F3E',
   c:'#FF9BAA', C:'#FFFFFF', F:'#FFC75C', O:'#FF8A3C',
   R:'#9A938A', T:'#7C766E',
   E:'#5B8FD6', y:'#FFFFFF', t:'#F2EFE6',
-  Y:'#F2C94C', L:'#7FC97C', v:'#3E7F3E'
+  Y:'#F2C94C'
 };
 const SPR = {
   pj1: [
-    "..nnnnnnnn..",
-    ".nnnnnnnnnn.",
-    "dddddddddddd",
-    ".hssssssssh.",
-    ".sggssssggs.",
-    ".sggssssggs.",
-    ".ssssssssss.",
-    ".sssmmmmsss.",
-    "..ssssssss..",
-    "..kkkkkkkk..",
-    ".kkkkkkkkkk.",
-    ".kkkkkkkkkk.",
-    ".kkkkkkkkkk.",
-    "..kk....kk..",
-    "..pp....pp..",
-    "..bb....bb.."
+    "..nnnnnnnn..",".nnnnnnnnnn.","dddddddddddd",".hssssssssh.",
+    ".sggssssggs.",".sggssssggs.",".ssssssssss.",".sssmmmmsss.",
+    "..ssssssss..","..kkkkkkkk..",".kkkkkkkkkk.",".kkkkkkkkkk.",
+    ".kkkkkkkkkk.","..kk....kk..","..pp....pp..","..bb....bb.."
   ],
   wife1: [
-    "..ffffffff..",
-    ".ffffffffff.",
-    ".ffffffffff.",
-    ".ffssssssff.",
-    ".fssessessf.",
-    ".fssssssssf.",
-    ".fsswwwwssf.",
-    ".ffssssssff.",
-    "..ffffffff..",
-    "..GGGGGGGG..",
-    ".GGwwwwwwGG.",
-    ".GGwwwwwwGG.",
-    ".GGGGGGGGGG.",
-    "..GG....GG..",
-    "..ss....ss..",
-    "..bb....bb.."
+    "..ffffffff..",".ffffffffff.",".ffffffffff.",".ffssssssff.",
+    ".fssessessf.",".fssssssssf.",".fsswwwwssf.",".ffssssssff.",
+    "..ffffffff..","..GGGGGGGG..",".GGwwwwwwGG.",".GGwwwwwwGG.",
+    ".GGGGGGGGGG.","..GG....GG..","..ss....ss..","..bb....bb.."
   ],
   bean: [
-    ".......ll.",
-    ".....llll.",
-    "....lLLl..",
-    "...lLvLl..",
-    "..lLvLl...",
-    ".lLvLl....",
-    ".llLl.....",
-    ".ll......."
+    ".......ll.",".....llll.","....lLLl..","...lLvLl..",
+    "..lLvLl...",".lLvLl....",".llLl.....",".ll......."
   ],
   candle: [
-    "..FF..",
-    ".FOOF.",
-    "..FF..",
-    "..cc..",
-    ".cCcc.",
-    ".cccc.",
-    ".cCcc.",
-    ".cccc.",
-    ".cCcc.",
-    ".cccc."
+    "..FF..",".FOOF.","..FF..","..cc..",".cCcc.",".cccc.",
+    ".cCcc.",".cccc.",".cCcc.",".cccc."
   ],
   cake: [
-    "....rr....",
-    "...rrrr...",
-    "..CCCCCC..",
-    ".CCCCCCCC.",
-    ".YYhYYYYY.",
-    ".YYYYYhYY.",
-    ".YhYYYYYY.",
-    ".YYYYhYYY.",
-    ".YYYYYYYY."
+    "....rr....","...rrrr...","..CCCCCC..",".CCCCCCCC.",
+    ".YYhYYYYY.",".YYYYYhYY.",".YhYYYYYY.",".YYYYhYYY.",".YYYYYYYY."
   ],
   eleph: [
-    ".EEEE.EEEEEE",
-    "EEEEEEEEEEEE",
-    "EyEEEEEEEEEE",
-    "EEEEEEEEEEEE",
-    "EtEEEEEEEEEE",
-    "E..EEE..EEE.",
-    "E..EE...EE..",
-    "...EE...EE.."
+    ".EEEE.EEEEEE","EEEEEEEEEEEE","EyEEEEEEEEEE","EEEEEEEEEEEE",
+    "EtEEEEEEEEEE","E..EEE..EEE.","E..EE...EE..","...EE...EE.."
   ],
   rock: [
-    "...RRRRR....",
-    "..RRRRRRRR..",
-    ".RRRTTRRRRR.",
-    "RRRRTTRRRRRR",
-    "RRRRRRRRTTRR",
-    "TTRRRRRRRRTT"
+    "...RRRRR....","..RRRRRRRR..",".RRRTTRRRRR.","RRRRTTRRRRRR",
+    "RRRRRRRRTTRR","TTRRRRRRRRTT"
   ]
 };
 SPR.pj2   = SPR.pj1.slice(0,13).concat(["...kk..kk...","...pp..pp...","..bb....bb.."]);
@@ -235,16 +191,27 @@ function drawSpr(rows, x, y, sc = 2, override) {
       ctx.fillRect(Math.round(x + c * sc), Math.round(y + r * sc), sc, sc);
     }
 }
-/* 兩人牽手（太太在前、PJ 在後） */
 function drawDuo(x, y, frame) {
-  const w = frame ? SPR.wife2 : SPR.wife1;
-  const p = frame ? SPR.pj2  : SPR.pj1;
-  drawSpr(w, x, y, 2);
-  drawSpr(p, x + 26, y, 2);
-  ctx.fillStyle = PAL.s;                 // 牽起來的手
+  drawSpr(frame ? SPR.wife2 : SPR.wife1, x, y, 2);
+  drawSpr(frame ? SPR.pj2  : SPR.pj1, x + 26, y, 2);
+  ctx.fillStyle = PAL.s;
   ctx.fillRect(x + 21, y + 21, 10, 3);
   ctx.fillRect(x + 24, y + 19, 4, 3);
 }
+
+/* ================= 場景主題 ================= */
+const THEME_BEACH = {
+  skyTop:'#8ED4F2', skyMid:'#A7E0F7', sea:'#3FA9E0', wave:'#6CC4EE',
+  sand:'#F0D9A0', fleck:'#E3C67E', island:'#5FA85C', trunk:'#9A6B3F',
+  leaf:'#5FA85C', cloud:'#FFFFFF', night:false
+};
+const THEME_NAOSHIMA = {
+  skyTop:'#4A3E7A', skyMid:'#B85A7E', sea:'#2E4E7A', wave:'#E8925A',
+  sand:'#C9B8A0', fleck:'#B3A28C', island:'#3A4A3E', trunk:'#6E5238',
+  leaf:'#3E6E4E', cloud:'#9A86B8', night:true
+};
+let theme = THEME_BEACH;
+const STARS = Array.from({length:16},(_,i)=>({x:(i*61+13)%CW, y:(i*29)%88, tw:i%3}));
 
 /* ================= 音效 ================= */
 let AC = null;
@@ -257,7 +224,7 @@ function beep(freq, dur=.09, type='square', vol=.12, when=0) {
   o.connect(g).connect(AC.destination);
   o.start(AC.currentTime + when); o.stop(AC.currentTime + when + dur + .02);
 }
-/* ---- 背景音樂：原創 8-bit 循環（C→F→Am→G），節奏跟著遊戲速度變快 ---- */
+/* ---- 背景音樂 ---- */
 const BGM_MEL  = [659,784,880,784, 659,523,587,659,  698,880,784,698, 659,523,587,0,
                   659,784,880,784, 988,880,784,659,  587,659,698,587, 523,0,523,0];
 const BGM_BASS = [131,0,196,0, 131,0,196,0,  175,0,262,0, 175,0,262,0,
@@ -275,8 +242,8 @@ function noteAt(freq, dur, type, vol, at) {
 setInterval(() => {
   if (!AC || state !== 'play' || !bgm.on) { bgm.next = 0; return; }
   const now = AC.currentTime;
-  if (!bgm.next) { bgm.next = now + .06; }
-  const spb = 60 / (118 + speed * 14) / 2;   // 八分音符長度，速度越快節奏越急
+  if (!bgm.next) bgm.next = now + .06;
+  const spb = 60 / (118 + speed * 14) / 2;
   while (bgm.next < now + .3) {
     noteAt(BGM_MEL[bgm.step],  spb*.88, 'square',   .05,  bgm.next);
     noteAt(BGM_BASS[bgm.step], spb*.95, 'triangle', .065, bgm.next);
@@ -284,81 +251,124 @@ setInterval(() => {
     bgm.next += spb;
   }
 }, 90);
+function jingleWin(){
+  const G4=392, A4=440, B4=494, C5=523, D5=587, E5=659, F5=698, G5=784;
+  const song = [
+    [G4,.5],[G4,.5],[A4,1],[G4,1],[C5,1],[B4,2],
+    [G4,.5],[G4,.5],[A4,1],[G4,1],[D5,1],[C5,2],
+    [G4,.5],[G4,.5],[G5,1],[E5,1],[C5,1],[B4,1],[A4,2],
+    [F5,.5],[F5,.5],[E5,1],[C5,1],[D5,1],[C5,2.5]
+  ];
+  const beat = .3; let when = 0;
+  song.forEach(([f, b]) => { beep(f, b*beat*.92, 'triangle', .15, when); when += b*beat; });
+}
+function jingleMilestone(){ [523,659,784].forEach((f,i)=>beep(f,.1,'triangle',.13,i*.08)); }
+
+/* ================= 狀態 ================= */
+const NEED = { candle:34, eleph:37, cake:12 };
+const HALF = { candle:17, eleph:19, cake:6 };
+let state='menu', mode='story', level=1;
+let t=0, speed=1.6, distance=0;
+let players, items, rocks, clouds, palms, bgEle, bgPump, pops, score, got, hearts, inv, shake;
+let best = 0;
+try { best = parseInt(localStorage.getItem('pjhbd_best') || '0', 10) || 0; } catch(e) {}
+
+function makePlayer(kind, x) {
+  return { kind, x, y:GROUND, vy:0, jumps:0, frame:0 };
+}
+function reset(keepProgress=false) {
+  t=0; speed = 1.6; inv=0; shake=0; distance=0;
+  if (!keepProgress) { score=0; hearts=3; got={candle:0,eleph:0,cake:0}; }
+  items=[]; rocks=[]; pops=[];
+  players = (mode==='duo')
+    ? [makePlayer('wife', 26), makePlayer('pj', 96)]
+    : [makePlayer('duo', 36)];
+  clouds = Array.from({length:4},(_,i)=>({x:i*90+20, y:12+Math.random()*26, w:26+Math.random()*20}));
+  palms = [{x:140},{x:300}];
+  bgEle = [{x:420,hue:'#5B8FD6'},{x:600,hue:'#6FBF74'}];
+  bgPump = [{x:480},{x:720}];
+  theme = (mode==='story' && level===2) ? THEME_NAOSHIMA : THEME_BEACH;
+  updateHUD();
+}
+function updateHUD() {
+  document.getElementById('score').textContent = score;
+  document.getElementById('hearts').textContent = '❤️'.repeat(hearts) + '🖤'.repeat(Math.max(0,3-hearts));
+  const g = document.getElementById('goalChip');
+  if (mode === 'endless') {
+    g.innerHTML = `🏃 ${Math.floor(distance)}m　🏆 ${best}m`;
+  } else {
+    g.innerHTML = `🕯️${got.candle}/34 🐘${got.eleph}/37 🍰${got.cake}/12` + (mode==='story' ? `　第${level}關` : '');
+  }
+}
+
+/* ================= 輸入 ================= */
+function jump(i) {
+  if (state !== 'play' || !players[i]) return;
+  const p = players[i];
+  if (p.jumps < 2) {
+    p.vy = p.jumps === 0 ? -4.7 : -4.1;
+    p.jumps++;
+    beep(p.jumps===1?300:380,.07,'square',.08);
+  }
+}
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (mode === 'duo') jump(e.clientX < innerWidth/2 ? 0 : 1);
+  else jump(0);
+});
+addEventListener('keydown', e => {
+  if (e.code==='Space'||e.code==='ArrowUp') { e.preventDefault(); jump(mode==='duo'?1:0); }
+  if (e.code==='KeyW' && mode==='duo') { e.preventDefault(); jump(0); }
+});
+
+/* ================= 流程 ================= */
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+function hideAll() { ['menu','inter','over','win'].forEach(hide); }
+
+function startMode(m) {
+  if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
+  mode = m; level = 1;
+  reset(false);
+  bgm.step = 0; bgm.next = 0;
+  state = 'play';
+  hideAll();
+  show('hud'); document.getElementById('hud').classList.remove('hidden');
+  const h = document.getElementById('tapHint');
+  h.textContent = mode==='duo' ? '左半邊＝她跳、右半邊＝PJ 跳！' : '點畫面跳躍（可以二段跳）';
+  h.classList.remove('hidden');
+  setTimeout(()=>h.classList.add('hidden'), 3600);
+}
+document.getElementById('mStory').addEventListener('click', ()=>startMode('story'));
+document.getElementById('mEndless').addEventListener('click', ()=>startMode('endless'));
+document.getElementById('mDuo').addEventListener('click', ()=>startMode('duo'));
+document.getElementById('retryBtn').addEventListener('click', ()=>startMode(mode));
+document.getElementById('againBtn').addEventListener('click', ()=>startMode(mode));
+document.getElementById('menuBtn1').addEventListener('click', ()=>{ hideAll(); hide('hud'); state='menu'; show('menu'); });
+document.getElementById('menuBtn2').addEventListener('click', ()=>{ hideAll(); hide('hud'); state='menu'; show('menu'); });
+document.getElementById('nextBtn').addEventListener('click', ()=>{
+  level = 2; reset(true); t = 300;   // 第 2 關起跑就比較快
+  state='play'; hideAll();
+  const h = document.getElementById('tapHint');
+  h.textContent = '直島到了！天黑路快，小心！';
+  h.classList.remove('hidden');
+  setTimeout(()=>h.classList.add('hidden'), 2800);
+});
 document.getElementById('muteBtn').addEventListener('click', e => {
   e.stopPropagation();
   bgm.on = !bgm.on;
   e.target.textContent = bgm.on ? '🔊' : '🔇';
 });
 
-function jingleWin(){
-  // 完整生日快樂歌（C大調，四句）：[頻率, 拍數]
-  const G4=392, A4=440, B4=494, C5=523, D5=587, E5=659, F5=698, G5=784;
-  const song = [
-    [G4,.5],[G4,.5],[A4,1],[G4,1],[C5,1],[B4,2],      // 祝你生日快樂
-    [G4,.5],[G4,.5],[A4,1],[G4,1],[D5,1],[C5,2],      // 祝你生日快樂
-    [G4,.5],[G4,.5],[G5,1],[E5,1],[C5,1],[B4,1],[A4,2], // 祝你生日快樂（親愛的PJ）
-    [F5,.5],[F5,.5],[E5,1],[C5,1],[D5,1],[C5,2.5]     // 祝你生日快樂～
-  ];
-  const beat = .3; let when = 0;
-  song.forEach(([f, b]) => {
-    beep(f, b*beat*.92, 'triangle', .15, when);
-    when += b*beat;
-  });
-}
-function jingleMilestone(){ [523,659,784].forEach((f,i)=>beep(f,.1,'triangle',.13,i*.08)); }
-
-/* ================= 遊戲狀態 ================= */
-const NEED = { candle:34, eleph:37, cake:12 };
-let state='title', t=0, speed=1.6;
-let player, items, rocks, clouds, palms, bgEle, pops, score, got, hearts, inv, shake;
-
-function reset() {
-  t=0; speed=1.6; score=0; hearts=3; inv=0; shake=0;
-  got = { candle:0, eleph:0, cake:0 };
-  player = { x:36, y:GROUND, vy:0, jumps:0, frame:0 };
-  items=[]; rocks=[]; pops=[];
-  clouds = Array.from({length:4},(_,i)=>({x:i*90+20, y:12+Math.random()*26, w:26+Math.random()*20}));
-  palms = [{x:140},{x:300}];
-  bgEle = [{x:420,hue:'#5B8FD6'},{x:600,hue:'#6FBF74'}];
-  updateHUD();
-}
-function updateHUD() {
-  document.getElementById('score').textContent = score;
-  document.getElementById('cC').textContent = got.candle;
-  document.getElementById('cE').textContent = got.eleph;
-  document.getElementById('cK').textContent = got.cake;
-  document.getElementById('hearts').textContent = '❤️'.repeat(hearts) + '🖤'.repeat(3-hearts);
-}
-
-/* ================= 輸入 ================= */
-function jump() {
-  if (state !== 'play') return;
-  if (player.jumps < 2) {
-    player.vy = player.jumps === 0 ? -4.7 : -4.1;
-    player.jumps++;
-    beep(player.jumps===1?300:380,.07,'square',.08);
-  }
-}
-cv.addEventListener('pointerdown', e => { e.preventDefault(); jump(); });
-addEventListener('keydown', e => { if (e.code==='Space'||e.code==='ArrowUp'){ e.preventDefault(); jump(); } });
-
-function start() {
-  if (!AC) { try { AC = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
-  reset(); state='play'; bgm.step = 0; bgm.next = 0;
-  ['title','win','over'].forEach(id=>document.getElementById(id).classList.add('hidden'));
-  document.getElementById('hud').classList.remove('hidden');
-  const h = document.getElementById('tapHint');
-  h.classList.remove('hidden');
-  setTimeout(()=>h.classList.add('hidden'), 3200);
-}
-document.getElementById('startBtn').addEventListener('click', start);
-document.getElementById('againBtn').addEventListener('click', start);
-document.getElementById('retryBtn').addEventListener('click', start);
-
 /* ================= 生成 ================= */
 let spawnTimer = 40;
 function pickCollectible() {
-  const rem = ['candle','eleph','cake'].map(k => Math.max(0, NEED[k]-got[k]));
+  if (mode === 'endless') {
+    const r = Math.random();
+    return r < .38 ? 'candle' : r < .74 ? 'eleph' : 'cake';
+  }
+  const cap = (mode==='story' && level===1) ? HALF : NEED;
+  const rem = ['candle','eleph','cake'].map(k => Math.max(0, cap[k]-got[k]));
   const tot = rem[0]+rem[1]+rem[2];
   if (tot === 0) return 'bean';
   let r = Math.random()*tot;
@@ -367,19 +377,20 @@ function pickCollectible() {
   return 'cake';
 }
 function spawn() {
-  const rockChance = Math.min(.36, .18 + speed*.045);
+  const lvlBoost = (mode==='story' && level===2) ? .06 : 0;
+  const rockChance = Math.min(.40, .18 + speed*.045 + lvlBoost);
   if (Math.random() < rockChance) {
     rocks.push({ x:CW+12, y:GROUND, w:24, h:12 });
-    if (speed > 2.6 && Math.random() < .3) rocks.push({ x:CW+44, y:GROUND, w:24, h:12 }); // 高速時雙石頭
+    if (speed > 2.6 && Math.random() < .3) rocks.push({ x:CW+44, y:GROUND, w:24, h:12 });
     return;
   }
-  const beanChance = hearts === 3 ? .08 : hearts === 2 ? .16 : .24; // 血越少豆越多
+  const beanChance = hearts === 3 ? .08 : hearts === 2 ? .16 : .24;
   if (Math.random() < beanChance) {
     items.push({ x:CW+12, y:GROUND-28-Math.random()*22, type:'bean' });
     return;
   }
   const type = pickCollectible();
-  if (type === 'eleph') {           // 大象成群結隊
+  if (type === 'eleph') {
     const n = 1 + Math.floor(Math.random()*3);
     for (let i=0;i<n;i++) items.push({ x:CW+12+i*30, y:GROUND-2, type:'eleph', hue:ELE_COLORS[(Math.random()*5)|0] });
   } else {
@@ -390,55 +401,80 @@ function spawn() {
 }
 
 /* ================= 更新 ================= */
+function goalReached() {
+  const cap = (mode==='story' && level===1) ? HALF : NEED;
+  return got.candle>=cap.candle && got.eleph>=cap.eleph && got.cake>=cap.cake;
+}
 function collect(it) {
   if (it.type === 'bean') {
     score++;
     if (hearts < 3) { hearts++; pops.push({x:it.x,y:it.y-18,txt:'+❤️',c:'#D9556B',l:50}); [660,880].forEach((f,i)=>beep(f,.09,'triangle',.13,i*.08)); }
     else pops.push({x:it.x,y:it.y-18,txt:'好吃!',c:'#5FA85C',l:38}), beep(880,.07,'square',.1);
-  }
-  else {
+  } else {
     got[it.type]++;
+    if (mode === 'endless') distance += 15;   // 無盡模式：收集品折算距離加成
     const info = { candle:['🕯️','#FF8A3C',1046], eleph:['🐘','#5B8FD6',740], cake:['🍰','#E8484F',920] }[it.type];
     pops.push({x:it.x,y:it.y-22,txt:info[0],c:info[1],l:46});
     beep(info[2],.08,'triangle',.12);
-    const n = got[it.type];
-    if (n === NEED[it.type]) { pops.push({x:player.x+40,y:player.y-46,txt:'湊齊!',c:'#E8484F',l:70}); jingleMilestone(); }
-    else if (n % 10 === 0)   { pops.push({x:player.x+40,y:player.y-46,txt:n+'!',c:'#6FBF74',l:60}); jingleMilestone(); }
-    if (got.candle>=NEED.candle && got.eleph>=NEED.eleph && got.cake>=NEED.cake) win();
+    if (mode !== 'endless') {
+      const n = got[it.type];
+      if (n % 10 === 0) { pops.push({x:120,y:80,txt:n+'!',c:'#6FBF74',l:60}); jingleMilestone(); }
+      if (goalReached()) {
+        if (mode==='story' && level===1) interlude();
+        else win();
+      }
+    }
   }
   updateHUD();
 }
-
+function interlude() {
+  state = 'inter';
+  jingleMilestone();
+  hide('hud');
+  setTimeout(()=>show('inter'), 300);
+  document.getElementById('hud').classList.add('hidden');
+}
 function update() {
   t++;
-  speed = Math.min(3.7, 1.6 + t*0.0014);
+  const cap = mode==='endless' ? 4.6 : 3.7;
+  speed = Math.min(cap, 1.6 + t*0.0014 + (mode==='story'&&level===2 ? .2 : 0));
+  if (mode === 'endless') { distance += speed * 0.06; if (t % 30 === 0) updateHUD(); }
   if (inv > 0) inv--;
 
-  player.vy += 0.25;
-  player.y += player.vy;
-  if (player.y >= GROUND) { player.y = GROUND; player.vy = 0; player.jumps = 0; }
-  if (t % Math.max(3, 7 - speed|0) === 0) player.frame ^= 1;
+  players.forEach(p => {
+    p.vy += 0.25;
+    p.y += p.vy;
+    if (p.y >= GROUND) { p.y = GROUND; p.vy = 0; p.jumps = 0; }
+    if (t % Math.max(3, 7 - speed|0) === 0) p.frame ^= 1;
+  });
 
   if (--spawnTimer <= 0) { spawn(); spawnTimer = Math.max(24, 56 - speed*9) + Math.random()*26; }
 
-  const px1 = player.x+4, px2 = player.x+48, py1 = player.y-32, py2 = player.y;
+  // 收集：任一角色碰到就算
   items = items.filter(it => {
     it.x -= speed;
     const s = it.type==='candle' ? {w:12,h:20} : it.type==='eleph' ? {w:24,h:16} : {w:18,h:18};
-    if (px1 < it.x+s.w && px2 > it.x && py1 < it.y && py2 > it.y-s.h) { collect(it); return false; }
+    for (const p of players) {
+      const w = p.kind==='duo' ? 48 : 22;
+      if (p.x+4 < it.x+s.w && p.x+w > it.x && p.y-32 < it.y && p.y > it.y-s.h) { collect(it); return false; }
+    }
     return it.x > -30;
   });
-  // 受傷判定比收集判定窄：只算兩人中間那一段，石頭也往內縮 5px
-  const hx1 = player.x+13, hx2 = player.x+39;
+  // 受傷：窄判定
   rocks = rocks.filter(rk => {
     rk.x -= speed;
-    if (inv === 0 && hx1 < rk.x+rk.w-5 && hx2 > rk.x+5 && py2 > GROUND-rk.h+3) {
-      hearts--; inv = 70; shake = 10;
-      pops.push({x:rk.x,y:GROUND-26,txt:'-❤️',c:'#D9556B',l:50});
-      beep(140,.16,'sawtooth',.14); beep(110,.16,'sawtooth',.12,.08);
-      updateHUD();
-      if (hearts <= 0) { gameOver(); }
-      return false;
+    if (inv === 0) {
+      for (const p of players) {
+        const [hx1, hx2] = p.kind==='duo' ? [p.x+13, p.x+39] : [p.x+6, p.x+18];
+        if (hx1 < rk.x+rk.w-5 && hx2 > rk.x+5 && p.y > GROUND-rk.h+3) {
+          hearts--; inv = 70; shake = 10;
+          pops.push({x:rk.x,y:GROUND-26,txt:'-❤️',c:'#D9556B',l:50});
+          beep(140,.16,'sawtooth',.14); beep(110,.16,'sawtooth',.12,.08);
+          updateHUD();
+          if (hearts <= 0) gameOver();
+          return false;
+        }
+      }
     }
     return rk.x > -30;
   });
@@ -447,24 +483,34 @@ function update() {
   clouds.forEach(c => { c.x -= speed*.18; if (c.x < -60) { c.x = CW+40; c.y = 10+Math.random()*30; } });
   palms.forEach(p => { p.x -= speed*.55; if (p.x < -30) p.x = CW+40+Math.random()*80; });
   bgEle.forEach(el => { el.x -= speed*.35; if (el.x < -50) el.x = CW+120+Math.random()*260; });
+  bgPump.forEach(pk => { pk.x -= speed*.3; if (pk.x < -60) pk.x = CW+150+Math.random()*300; });
   if (shake > 0) shake--;
 }
-
 function gameOver() {
   state = 'over';
-  document.getElementById('hud').classList.add('hidden');
-  document.getElementById('overStats').innerHTML =
-    `🕯️ ${got.candle}/34　🐘 ${got.eleph}/37　🍰 ${got.cake}/12　🫛 ${score}`;
-  setTimeout(()=>document.getElementById('over').classList.remove('hidden'), 400);
+  hide('hud'); document.getElementById('hud').classList.add('hidden');
+  let msg;
+  if (mode === 'endless') {
+    const d = Math.floor(distance);
+    let rec = '';
+    if (d > best) { best = d; rec = '<br>🏆 新紀錄！'; try { localStorage.setItem('pjhbd_best', String(best)); } catch(e){} }
+    document.getElementById('overTitle').textContent = '🏁 跑到這裡了！';
+    msg = `這一趟跑了 <b>${d} m</b>（最佳 ${best} m）${rec}<br>🕯️${got.candle} 🐘${got.eleph} 🍰${got.cake} 🫛${score}`;
+  } else {
+    document.getElementById('overTitle').textContent = '💥 哎呀，絆倒了！';
+    msg = `這一趟收集了：<br>🕯️ ${got.candle}/34　🐘 ${got.eleph}/37　🍰 ${got.cake}/12　🫛 ${score}<br>` +
+          (mode==='duo' ? '兩個人要一起躲石頭，再試一次！' : '牽好手，再來一次！');
+  }
+  document.getElementById('overStats').innerHTML = msg;
+  setTimeout(()=>show('over'), 400);
 }
-
 function win() {
   state = 'win';
   jingleWin();
   document.getElementById('finalScore').textContent = score;
-  document.getElementById('hud').classList.add('hidden');
+  hide('hud'); document.getElementById('hud').classList.add('hidden');
   setTimeout(()=> {
-    document.getElementById('win').classList.remove('hidden');
+    show('win');
     const cols = ['#FFC75C','#FFAAB4','#A8DFC1','#A6D6F0','#FF8A3C'];
     for (let i = 0; i < 70; i++) {
       const c = document.createElement('div');
@@ -472,7 +518,7 @@ function win() {
       c.style.left = Math.random()*100 + '%';
       c.style.background = cols[i%5];
       c.style.animationDelay = Math.random()*1.2 + 's';
-      document.getElementById('stage').appendChild(c);
+      document.body.appendChild(c);
       setTimeout(()=>c.remove(), 3600);
     }
   }, 500);
@@ -480,30 +526,55 @@ function win() {
 
 /* ================= 繪製 ================= */
 function drawBG() {
-  ctx.fillStyle = '#8ED4F2'; ctx.fillRect(0,0,CW,104);
-  ctx.fillStyle = '#A7E0F7'; ctx.fillRect(0,64,CW,40);
-  ctx.fillStyle = '#FFFFFF';
+  ctx.fillStyle = theme.skyTop; ctx.fillRect(0,0,CW,104);
+  ctx.fillStyle = theme.skyMid; ctx.fillRect(0,64,CW,40);
+  if (theme.night) {
+    ctx.fillStyle = '#FFF3C0';
+    STARS.forEach(s => { if ((t>>4)%3 !== s.tw) ctx.fillRect(s.x, s.y, 2, 2); });
+    ctx.fillStyle = '#FFF6D8'; ctx.fillRect(266, 18, 14, 14); ctx.fillStyle = theme.skyTop; ctx.fillRect(262, 14, 10, 10);
+  }
+  ctx.fillStyle = theme.cloud;
   clouds.forEach(c => { ctx.fillRect(c.x,c.y,c.w,8); ctx.fillRect(c.x+5,c.y-5,c.w-10,6); });
-  ctx.fillStyle = '#3FA9E0'; ctx.fillRect(0,104,CW,26);
-  ctx.fillStyle = '#6CC4EE';
+  ctx.fillStyle = theme.sea; ctx.fillRect(0,104,CW,26);
+  ctx.fillStyle = theme.wave;
   for (let i=0;i<8;i++) ctx.fillRect(((i*47 + t*.4) % (CW+30))-15, 108+(i%3)*7, 18, 2);
-  ctx.fillStyle = '#5FA85C'; ctx.fillRect(24,98,26,6); ctx.fillRect(250,96,34,8);
-  bgEle.forEach(el => {
-    ctx.fillStyle = el.hue;
-    ctx.fillRect(el.x,112,26,12); ctx.fillRect(el.x+22,106,10,10); ctx.fillRect(el.x+30,110,3,9);
-    ctx.fillRect(el.x+2,124,4,5); ctx.fillRect(el.x+18,124,4,5);
-    ctx.fillStyle='#FFF'; ctx.fillRect(el.x+27,108,2,2);
-  });
-  ctx.fillStyle = '#F0D9A0'; ctx.fillRect(0,130,CW,CH-130);
-  ctx.fillStyle = '#E3C67E';
+  ctx.fillStyle = theme.island; ctx.fillRect(24,98,26,6); ctx.fillRect(250,96,34,8);
+  if (theme.night) {
+    // 直島：背景大南瓜（草間彌生風點點）
+    bgPump.forEach(pk => {
+      ctx.fillStyle = '#E8B830';
+      ctx.fillRect(pk.x, 108, 34, 20);
+      ctx.fillRect(pk.x-4, 112, 42, 12);
+      ctx.fillStyle = '#2E2A24';
+      ctx.fillRect(pk.x+14, 102, 6, 7);
+      [[6,112],[16,116],[26,112],[10,122],[22,122],[2,116],[32,118]].forEach(([dx,dy])=>ctx.fillRect(pk.x+dx, dy, 3, 3));
+    });
+  } else {
+    bgEle.forEach(el => {
+      ctx.fillStyle = el.hue;
+      ctx.fillRect(el.x,112,26,12); ctx.fillRect(el.x+22,106,10,10); ctx.fillRect(el.x+30,110,3,9);
+      ctx.fillRect(el.x+2,124,4,5); ctx.fillRect(el.x+18,124,4,5);
+      ctx.fillStyle='#FFF'; ctx.fillRect(el.x+27,108,2,2);
+    });
+  }
+  ctx.fillStyle = theme.sand; ctx.fillRect(0,130,CW,CH-130);
+  ctx.fillStyle = theme.fleck;
   for (let i=0;i<14;i++) ctx.fillRect(((i*61 + t*speed*.9) % (CW+20))-10, 138+(i*13)%36, 8, 2);
   palms.forEach(p => {
-    ctx.fillStyle='#9A6B3F'; ctx.fillRect(p.x,112,4,22);
-    ctx.fillStyle='#5FA85C';
+    ctx.fillStyle=theme.trunk; ctx.fillRect(p.x,112,4,22);
+    ctx.fillStyle=theme.leaf;
     ctx.fillRect(p.x-8,108,20,4); ctx.fillRect(p.x-5,104,14,4); ctx.fillRect(p.x-2,100,8,4);
   });
 }
-
+function drawPlayers(blink) {
+  players.forEach(p => {
+    if (blink) return;
+    const airborne = p.y < GROUND;
+    if (p.kind === 'duo') drawDuo(p.x, p.y-32, airborne ? 0 : p.frame);
+    else if (p.kind === 'wife') drawSpr(airborne||!p.frame ? SPR.wife1 : SPR.wife2, p.x, p.y-32, 2);
+    else drawSpr(airborne||!p.frame ? SPR.pj1 : SPR.pj2, p.x, p.y-32, 2);
+  });
+}
 function draw() {
   ctx.save();
   if (shake > 0) ctx.translate((Math.random()-.5)*3.5, (Math.random()-.5)*3.5);
@@ -515,22 +586,27 @@ function draw() {
     if (it.type==='eleph')  drawSpr(SPR.eleph, it.x, it.y-16, 2, {E:it.hue});
   });
   rocks.forEach(rk => drawSpr(SPR.rock, rk.x, GROUND-12, 2));
-  if (!(inv > 0 && (t>>2) % 2 === 0)) {   // 受傷時閃爍
-    drawDuo(player.x, player.y-32, (player.y<GROUND) ? 0 : player.frame);
-  }
+  drawPlayers(inv > 0 && (t>>2) % 2 === 0);
   ctx.font='bold 9px monospace'; ctx.textAlign='center';
   pops.forEach(p => { ctx.fillStyle=p.c; ctx.fillText(p.txt, p.x+8, p.y); });
   ctx.restore();
 }
-
-function drawTitleScene() { drawBG(); drawDuo(136, GROUND-32, ((t/20)|0)%2); }
-
+function drawMenuScene() {
+  drawBG();
+  drawDuo(136, GROUND-32, ((t/20)|0)%2);
+}
 function loop() {
-  if (state==='play') { update(); draw(); }
-  else if (state==='title') { t += .5; drawTitleScene(); }
+  if (state === 'play') { update(); draw(); }
+  else if (state === 'menu') { t += .5; drawMenuScene(); }
   requestAnimationFrame(loop);
 }
-reset();
+theme = THEME_BEACH;
+players = [makePlayer('duo', 36)];
+items=[]; rocks=[]; pops=[]; score=0; hearts=3; got={candle:0,eleph:0,cake:0};
+clouds = Array.from({length:4},(_,i)=>({x:i*90+20, y:12+Math.random()*26, w:26+Math.random()*20}));
+palms = [{x:140},{x:300}];
+bgEle = [{x:420,hue:'#5B8FD6'},{x:600,hue:'#6FBF74'}];
+bgPump = [{x:480},{x:720}];
 loop();
 </script>
 </body>
