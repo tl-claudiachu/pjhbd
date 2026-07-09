@@ -28,7 +28,7 @@
     box-shadow:0 3px 0 rgba(0,0,0,.25); white-space:nowrap;
   }
   .overlay {
-    position:absolute; inset:0; z-index:10; display:flex; flex-direction:column;
+    position:fixed; inset:0; z-index:10; display:flex; flex-direction:column;
     align-items:center; justify-content:center; gap:2.6vmin; text-align:center;
     background:rgba(24,40,56,.55); backdrop-filter:blur(2px); padding:4vmin;
   }
@@ -56,9 +56,16 @@
     font-weight:900; font-size:clamp(12px,2.6vmin,17px); text-shadow:0 2px 0 rgba(0,0,0,.4);
     z-index:4; pointer-events:none; animation:pulse 1.4s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:.9} 50%{opacity:.4} }
-  .confetti { position:absolute; width:1.6vmin; height:1.6vmin; z-index:20; pointer-events:none;
+  .confetti { position:fixed; width:1.6vmin; height:1.6vmin; z-index:20; pointer-events:none;
               animation:fall 2s ease-in forwards; border-radius:20%; top:-5%; }
   @keyframes fall { to { transform:translateY(110vh) rotate(560deg); opacity:0; } }
+  @media (orientation: portrait) {
+    .panel { padding:5vmin 6vmin; gap:2vmin; }
+    .panel h1 { font-size:clamp(20px,6.5vmin,32px); }
+    .panel p  { font-size:clamp(13px,3.6vmin,17px); }
+    .btn { font-size:clamp(16px,4.5vmin,22px); }
+    #winArt { max-height:38vh; }
+  }
 </style>
 </head>
 <body>
@@ -80,7 +87,8 @@
          收集 <b>🕯️ 蠟燭 ×34、🐘 大象 ×37、🍰 蛋糕 ×12</b>，<br>
          全部湊齊才算成功！<br>
          撞到石頭會扣 ❤️（只有三顆），<br>吃 PJ 最愛的四季豆 🫛 可以補血！<br>
-         而且速度會越跑越快……準備好了嗎？</p>
+         而且速度會越跑越快……準備好了嗎？<br>
+         <span style="color:#B08A5C;">📱 手機請轉「橫向」玩，畫面才夠大！</span></p>
       <button class="btn" id="startBtn">牽手出發 ▶</button>
     </div>
   </div>
