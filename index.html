@@ -49,6 +49,10 @@
   .btn.mode { width:min(76vw, 380px); display:flex; flex-direction:column; gap:2px; padding:.55em 1em; }
   .btn.mode small { font-weight:700; font-size:.62em; color:#7A6454; }
   .btn.ghost { background:#FFF; }
+  .btn.locked { background:#E8E0D0; color:#A89880; box-shadow:0 5px 0 #A89880; border-color:#A89880; }
+  .btn.locked small { color:#B3A48C; }
+  @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+  .btn.deny { animation:shake .3s; }
   #winArt {
     max-height:44vh; max-width:84%; width:auto; min-height:0; flex:0 1 auto;
     object-fit:contain; border:4px solid var(--cocoa); border-radius:16px;
@@ -98,6 +102,7 @@
     <div class="panel">
       <h1>🌅 第 1 關完成！</h1>
       <p>回憶收集了一半，搭上船前往直島……<br>天色漸暗，速度更快，小心腳步！</p>
+      <p id="unlockMsg" class="hidden" style="color:#E8484F;">🔓 新模式解鎖：無盡挑戰＆雙人同樂！</p>
       <button class="btn" id="nextBtn">前往第 2 關 ⛴️</button>
     </div>
   </div>
@@ -270,8 +275,20 @@ const HALF = { candle:17, eleph:19, cake:6 };
 let state='menu', mode='story', level=1;
 let t=0, speed=1.6, distance=0;
 let players, items, rocks, clouds, palms, bgEle, bgPump, pops, score, got, hearts, inv, shake;
-let best = 0;
-try { best = parseInt(localStorage.getItem('pjhbd_best') || '0', 10) || 0; } catch(e) {}
+let best = 0, unlocked = false;
+try {
+  best = parseInt(localStorage.getItem('pjhbd_best') || '0', 10) || 0;
+  unlocked = localStorage.getItem('pjhbd_unlock') === '1';
+} catch(e) {}
+function refreshMenu() {
+  [['mEndless','🏃 無盡挑戰'],['mDuo','💑 雙人同樂']].forEach(([id, name]) => {
+    const b = document.getElementById(id);
+    b.classList.toggle('locked', !unlocked);
+    b.querySelector('small').textContent = unlocked
+      ? (id==='mEndless' ? '不會結束、越跑越快，比距離 PK 最高紀錄' : '左半邊控制她、右半邊控制 PJ，共用三顆心')
+      : '🔒 破完故事模式第 1 關解鎖';
+  });
+}
 
 function makePlayer(kind, x) {
   return { kind, x, y:GROUND, vy:0, jumps:0, frame:0 };
@@ -340,8 +357,16 @@ function startMode(m) {
   setTimeout(()=>h.classList.add('hidden'), 3600);
 }
 document.getElementById('mStory').addEventListener('click', ()=>startMode('story'));
-document.getElementById('mEndless').addEventListener('click', ()=>startMode('endless'));
-document.getElementById('mDuo').addEventListener('click', ()=>startMode('duo'));
+function tryMode(m, btn) {
+  if (!unlocked) {
+    btn.classList.remove('deny'); void btn.offsetWidth; btn.classList.add('deny');
+    beep(180,.1,'square',.1);
+    return;
+  }
+  startMode(m);
+}
+document.getElementById('mEndless').addEventListener('click', e=>tryMode('endless', e.currentTarget));
+document.getElementById('mDuo').addEventListener('click', e=>tryMode('duo', e.currentTarget));
 document.getElementById('retryBtn').addEventListener('click', ()=>startMode(mode));
 document.getElementById('againBtn').addEventListener('click', ()=>startMode(mode));
 document.getElementById('menuBtn1').addEventListener('click', ()=>{ hideAll(); hide('hud'); state='menu'; show('menu'); });
@@ -429,6 +454,12 @@ function collect(it) {
 }
 function interlude() {
   state = 'inter';
+  if (!unlocked) {
+    unlocked = true;
+    try { localStorage.setItem('pjhbd_unlock', '1'); } catch(e) {}
+    document.getElementById('unlockMsg').classList.remove('hidden');
+    refreshMenu();
+  }
   jingleMilestone();
   hide('hud');
   setTimeout(()=>show('inter'), 300);
@@ -607,6 +638,7 @@ clouds = Array.from({length:4},(_,i)=>({x:i*90+20, y:12+Math.random()*26, w:26+M
 palms = [{x:140},{x:300}];
 bgEle = [{x:420,hue:'#5B8FD6'},{x:600,hue:'#6FBF74'}];
 bgPump = [{x:480},{x:720}];
+refreshMenu();
 loop();
 </script>
 </body>
