@@ -66,6 +66,10 @@
   .confetti { position:fixed; width:1.6vmin; height:1.6vmin; z-index:20; pointer-events:none;
               animation:fall 2s ease-in forwards; border-radius:20%; top:-5%; }
   @keyframes fall { to { transform:translateY(110vh) rotate(560deg); opacity:0; } }
+  #rotateHint { display:none; color:#B08A5C; }
+  @media (orientation: portrait) and (pointer: coarse) {
+    #rotateHint { display:block; }
+  }
   @media (orientation: portrait) {
     .panel { padding:5vmin 6vmin; gap:2vmin; }
     .panel h1 { font-size:clamp(20px,6.5vmin,32px); }
@@ -90,7 +94,7 @@
   <div id="menu" class="overlay">
     <div class="panel">
       <h1>🎂 PJ 的生日大冒險</h1>
-      <p style="margin-bottom:.5vmin;">📱 手機請轉「橫向」玩，畫面才夠大！</p>
+      <p id="rotateHint" style="margin-bottom:.5vmin;">📱 手機請轉「橫向」玩，畫面才夠大！</p>
       <button class="btn mode" id="mStory">🏝️ 故事模式<small>海灘出發 → 直島黃昏，兩關收集 34🕯️ 37🐘 12🍰</small></button>
       <button class="btn mode ghost" id="mEndless">🏃 無盡挑戰<small>不會結束、越跑越快，比距離 PK 最高紀錄</small></button>
       <button class="btn mode ghost" id="mDuo">💑 雙人同樂<small>左半邊控制她、右半邊控制 PJ，共用三顆心</small></button>
